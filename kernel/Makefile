@@ -133,7 +133,13 @@ $(obj)/config_data.gz: $(obj)/config_data FORCE
 
 filechk_cat = cat $<
 
+ifeq ($(CONFIG_MACH_HAYDN),y)
+$(obj)/config_data: arch/arm64/configs/haydn_stock-defconfig FORCE
+else ifeq ($(CONFIG_MACH_LISA),y)
+$(obj)/config_data: arch/arm64/configs/lisa_stock_defconfig FORCE
+else
 $(obj)/config_data: $(KCONFIG_CONFIG) FORCE
+endif
 	$(call filechk,cat)
 
 $(obj)/kheaders.o: $(obj)/kheaders_data.tar.xz
