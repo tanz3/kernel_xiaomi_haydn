@@ -663,6 +663,11 @@ static void ep_pcie_core_init(struct ep_pcie_dev_t *dev, bool configured)
 					TCSR_PCIE_RST_SEPARATION, BIT(5), 0);
 	}
 
+	if (!dev->enumerated) {
+		EP_PCIE_DBG2(dev, "PCIe V%d: Clear L23 READY after enumeration\n", dev->rev);
+		ep_pcie_write_reg_field(dev->parf, PCIE20_PARF_PM_CTRL, BIT(2), 0);
+	}
+
 	if (dev->active_config) {
 		struct resource *dbi = dev->res[EP_PCIE_RES_DM_CORE].resource;
 		u32 dbi_lo = dbi->start;
@@ -1435,14 +1440,18 @@ static int ep_pcie_core_clkreq_override(bool config)
 
 	if (config) {
 		ep_pcie_write_reg_field(dev->parf, PCIE20_PARF_CLKREQ_OVERRIDE,
-			PCIE20_PARF_CLKREQ_IN_OVERRIDE_VAL, BIT(3));
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_VAL_MASK,
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_VAL_DEASSERT);
 		ep_pcie_write_reg_field(dev->parf, PCIE20_PARF_CLKREQ_OVERRIDE,
-			PCIE20_PARF_CLKREQ_IN_OVERRIDE_ENABLE, BIT(1));
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_ENABLE_MASK,
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_ENABLE_EN);
 	} else {
 		ep_pcie_write_reg_field(dev->parf, PCIE20_PARF_CLKREQ_OVERRIDE,
-			PCIE20_PARF_CLKREQ_IN_OVERRIDE_ENABLE, 0);
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_ENABLE_MASK,
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_ENABLE_DIS);
 		ep_pcie_write_reg_field(dev->parf, PCIE20_PARF_CLKREQ_OVERRIDE,
-			PCIE20_PARF_CLKREQ_IN_OVERRIDE_VAL, 0);
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_VAL_MASK,
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_VAL_ASSERT);
 	}
 
 	return 0;
@@ -2270,6 +2279,14 @@ static irqreturn_t ep_pcie_handle_dstate_change_irq(int irq, void *data)
 	} else if (dstate == 0) {
 		dev->l23_ready = false;
 		dev->d0_counter++;
+		/*
+		 * When device is trasistion back to D0 from D3hot
+		 * (without D3cold), REQ_EXIT_L1 bit won't get cleared.
+		 * And L1 would get blocked till next D3cold.
+		 * So clear it explicitly during D0.
+		 */
+		ep_pcie_write_mask(dev->parf + PCIE20_PARF_PM_CTRL, BIT(1), 0);
+
 		atomic_set(&dev->host_wake_pending, 0);
 		EP_PCIE_DBG(dev,
 			"PCIe V%d: No. %ld change to D0 state, clearing wake pending:%d\n",
@@ -2586,6 +2603,7 @@ int32_t ep_pcie_irq_init(struct ep_pcie_dev_t *dev)
 	INIT_WORK(&dev->handle_d3cold_work, handle_d3cold_func);
 
 	if (dev->aggregated_irq) {
+		irq_set_status_flags(dev->irq[EP_PCIE_INT_GLOBAL].num, IRQ_NOAUTOEN);
 		ret = devm_request_irq(pdev,
 			dev->irq[EP_PCIE_INT_GLOBAL].num,
 			ep_pcie_handle_global_irq,
@@ -3429,6 +3447,7 @@ static int ep_pcie_probe(struct platform_device *pdev)
 
 	qcom_edma_init(&pdev->dev);
 
+	enable_irq(ep_pcie_dev.irq[EP_PCIE_INT_GLOBAL].num);
 	return 0;
 
 irq_deinit:
