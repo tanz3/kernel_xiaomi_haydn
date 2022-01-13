@@ -475,6 +475,15 @@ config MACH_MONA
 	help
 	  This enables support for Xiaomi Civi 1.
 
+config XIAOMI_FEATURES
+	bool "Xiaomi specific drivers"
+
+config PERF_HUMANTASK
+	bool "enable feature humantask"
+	depends on XIAOMI_FEATURES
+	help
+	  support switch on/off of sched humantask.
+
 endif
 endmenu
 endmenu
