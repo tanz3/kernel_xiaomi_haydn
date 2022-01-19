@@ -490,6 +490,12 @@ config MIMISC_MC
 	help
 	  Acct ion/gpu misc memory to memory cgroup.
 
+config QGKI_SYSTEM
+	bool "QGKI config"
+	depends on MACH_XIAOMI
+	help
+ 	  Some QGKI Stuff by xiaomeme.
+
 endif
 endmenu
 endmenu
