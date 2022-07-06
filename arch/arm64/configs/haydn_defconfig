@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm64 5.4.202 Kernel Configuration
+# Linux/arm64 5.4.203 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="LOLZ clang version 15.0.0 (https://github.com/llvm/llvm-project 057db2002bb3d79429db3c5fe436c8cefc50cb25)"
 CONFIG_GCC_VERSION=0
@@ -16,7 +16,7 @@ CONFIG_THREAD_INFO_IN_TASK=y
 CONFIG_INIT_ENV_ARG_LIMIT=32
 # CONFIG_COMPILE_TEST is not set
 # CONFIG_WERROR is not set
-CONFIG_LOCALVERSION="-qgki"
+CONFIG_LOCALVERSION="-CLO-12-B1"
 CONFIG_LOCALVERSION_AUTO=y
 CONFIG_BUILD_SALT=""
 CONFIG_DEFAULT_HOSTNAME="(none)"
